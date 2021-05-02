@@ -43,7 +43,6 @@ func (s *Server) accept(listener *net.TCPListener) {
 			}
 
 		}()
-
 	}
 }
 
