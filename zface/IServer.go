@@ -7,4 +7,7 @@ type IServer interface {
 	Stop()
 	// 开启服务
 	Server()
+
+	// 添加一个路由
+	AddRouter(r IRouter)
 }

@@ -16,6 +16,9 @@ type Server struct {
 	Port string
 	// 服务名称
 	ServerName string
+
+	// 路由功能
+	Router zface.IRouter
 }
 
 func CallBackClient(c *net.TCPConn, buf []byte, cnt int) error {
@@ -41,7 +44,7 @@ func (s *Server) accept(listener *net.TCPListener) {
 		// 证明已经连接, 做一些业务逻辑
 		var cid uint32
 		cid = 0
-		dealConn := NewConnection(connection, cid, CallBackClient)
+		dealConn := NewConnection(connection, cid, s.Router)
 		cid++
 
 		go dealConn.Start()
@@ -89,12 +92,18 @@ func (s *Server) Server() {
 	select {}
 }
 
+func (s *Server) AddRouter(r zface.IRouter) {
+	// 添加路由
+	s.Router = r
+}
+
 func NewServer(name string) zface.IServer {
 	s := &Server{
 		"tcp",
 		"127.0.0.1",
 		"8081",
 		name,
+		nil,
 	}
 	return s
 }

@@ -15,7 +15,10 @@ type Connection struct {
 	// 当前链接的状态
 	isClosed bool
 	// 该链接处理方法api
-	handleAPI zface.HandFunc
+	//handleAPI zface.HandFunc
+
+	Router zface.IRouter
+
 	// 告知该链接已经退出、停止的channel
 	ExitBuffChan chan bool
 }
@@ -27,16 +30,30 @@ func (c *Connection) StartReader() {
 
 	for {
 		buf := make([]byte, 512)
-		cnt, err := c.Conn.Read(buf)
+		_, err := c.Conn.Read(buf)
 		if err != nil {
 			// 读取失败
 			panic("读取失败， " + err.Error())
 		}
 
 		// 并不是直接调用c.Conn.Write(), 而是调用模板回调方法
-		if err := c.handleAPI(c.Conn, buf, cnt); err != nil {
-			panic("回写失败" + err.Error())
+		//if err := c.handleAPI(c.Conn, buf, cnt); err != nil {
+		//	panic("回写失败" + err.Error())
+		//}
+
+		// 当Connection读取完数据之后，我们将Connection链接对象和数据 封装成原子包Request
+		// Request作为Router的输入
+		r := Request{
+			c,
+			buf,
 		}
+		// 根据路由调用方法
+		go func(req zface.IRequest) {
+			c.Router.PreHandler(req)
+			c.Router.Handler(req)
+			c.Router.PostHandler(req)
+		}(&r)
+
 	}
 }
 
@@ -64,12 +81,13 @@ func (conn *Connection) GetConnID() uint {
 func (conn *Connection) GetRemoteAddr() net.Addr {
 	return conn.Conn.RemoteAddr()
 }
-func NewConnection(conn *net.TCPConn, connId uint32, callbackFunc zface.HandFunc) *Connection {
+func NewConnection(conn *net.TCPConn, connId uint32, router zface.IRouter) *Connection {
 	return &Connection{
 		conn,
 		connId,
 		false,
-		callbackFunc,
+		router,
 		make(chan bool, 1),
+
 	}
 }
