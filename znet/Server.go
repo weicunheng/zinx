@@ -1,6 +1,7 @@
 package znet
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"zinx/zface"
@@ -17,6 +18,15 @@ type Server struct {
 	ServerName string
 }
 
+func CallBackClient(c *net.TCPConn, buf []byte, cnt int) error {
+	fmt.Println("【服务器回写回调函数】")
+	if _, err := c.Write(buf[:cnt]); err != nil {
+		//panic("回写失败" + err.Error())
+		return errors.New("回调方法回写失败...")
+	}
+	return nil
+}
+
 func (s *Server) Stop() {
 
 }
@@ -29,20 +39,26 @@ func (s *Server) accept(listener *net.TCPListener) {
 			panic("Accept 失败: " + err.Error())
 		}
 		// 证明已经连接, 做一些业务逻辑
-		go func() {
-			for {
-				buf := make([]byte, 512)
-				cnt, err := connection.Read(buf)
-				if err != nil {
-					// 读取失败
-					panic("读取失败， " + err.Error())
-				}
-				if _, err := connection.Write(buf[:cnt]); err != nil {
-					panic("回写失败" + err.Error())
-				}
-			}
+		var cid uint32
+		cid = 0
+		dealConn := NewConnection(connection, cid, CallBackClient)
+		cid++
 
-		}()
+		go dealConn.Start()
+		//go func() {
+		//	for {
+		//		buf := make([]byte, 512)
+		//		cnt, err := connection.Read(buf)
+		//		if err != nil {
+		//			// 读取失败
+		//			panic("读取失败， " + err.Error())
+		//		}
+		//		if _, err := connection.Write(buf[:cnt]); err != nil {
+		//			panic("回写失败" + err.Error())
+		//		}
+		//	}
+		//
+		//}()
 	}
 }
 

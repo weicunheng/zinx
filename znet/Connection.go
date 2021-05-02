@@ -62,7 +62,7 @@ func (conn *Connection) GetConnID() uint {
 	return 0
 }
 func (conn *Connection) GetRemoteAddr() net.Addr {
-	return nil
+	return conn.Conn.RemoteAddr()
 }
 func NewConnection(conn *net.TCPConn, connId uint32, callbackFunc zface.HandFunc) *Connection {
 	return &Connection{
