@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"zinx/utils"
 	"zinx/zface"
 )
 
@@ -98,10 +99,14 @@ func (s *Server) AddRouter(r zface.IRouter) {
 }
 
 func NewServer(name string) zface.IServer {
+
+	//utils.GlobalObject.Reload() // 加载配置文件
+	settings := utils.GlobalObject
+	settings.Reload()
 	s := &Server{
 		"tcp",
-		"127.0.0.1",
-		"8081",
+		settings.Host,
+		settings.TcpPort,
 		name,
 		nil,
 	}
