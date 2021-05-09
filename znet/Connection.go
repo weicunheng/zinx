@@ -93,6 +93,7 @@ func (conn *Connection) StartReader() {
 		}
 		// 处理router和handler
 		//go conn.Router.DoMsgHandler(&r) worker协程和请求数量一致，比较耗费资源，优化为req请求任务交给worker pool(工作池)
+		
 		go conn.Router.SendReqToTaskQueue(&r)
 	}
 }

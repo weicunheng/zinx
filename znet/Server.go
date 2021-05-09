@@ -69,6 +69,9 @@ func (s *Server) accept(listener *net.TCPListener) {
 }
 
 func (s *Server) Start() {
+	// 启动任务队列初始化
+	s.Router.StartWorkerPool()
+
 	// go默认会创建socket，所以我们只需要获取连接对象即可
 	tcpAddr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%s", s.IPAdr, s.Port))
 	if err != nil {
