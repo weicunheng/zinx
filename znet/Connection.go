@@ -24,10 +24,10 @@ type Connection struct {
 	ExitBuffChan chan bool
 }
 
-func (c *Connection) StartReader() {
+func (conn *Connection) StartReader() {
 
-	defer fmt.Printf("id:%s read is exit , remode addr is %s\n", c.ConnId, c.GetRemoteAddr().String())
-	defer c.Stop()
+	defer fmt.Printf("id:%s read is exit , remode addr is %s\n", conn.ConnId, conn.GetRemoteAddr().String())
+	defer conn.Stop()
 
 	for {
 		/*
@@ -62,7 +62,7 @@ func (c *Connection) StartReader() {
 
 		// 2. 读取客户端msg head  8个字节二进制数据
 		headByteData := make([]byte, dp.GetHeadLen())
-		if _, err := io.ReadFull(c.GetTCPConnection(), headByteData); err != nil {
+		if _, err := io.ReadFull(conn.GetTCPConnection(), headByteData); err != nil {
 			panic("读取链接中Message头信息 失败！失败原因:" + err.Error())
 		}
 
@@ -76,7 +76,7 @@ func (c *Connection) StartReader() {
 		var messageBody []byte
 		if msg.GetMsgLen() > 0 {
 			messageBody = make([]byte, msg.GetMsgLen())
-			if _, err := io.ReadFull(c.GetTCPConnection(), messageBody); err != nil{
+			if _, err := io.ReadFull(conn.GetTCPConnection(), messageBody); err != nil{
 				panic("读取链接中Message Body信息 失败！失败原因:" + err.Error())
 			}
 
@@ -89,17 +89,41 @@ func (c *Connection) StartReader() {
 		// 当Connection读取完数据之后，我们将Connection链接对象和数据 封装成原子包Request
 		// Request作为Router的输入
 		r := Request{
-			c,
+			conn,
 			msg,
 		}
 		// 根据路由调用方法
 		go func(req zface.IRequest) {
-			c.Router.PreHandler(req)
-			c.Router.Handler(req)
-			c.Router.PostHandler(req)
+			conn.Router.PreHandler(req)
+			conn.Router.Handler(req)
+			conn.Router.PostHandler(req)
 		}(&r)
-		
+
 	}
+}
+
+// 封包方法
+func (conn *Connection) SendMsg(msgId uint32, data []byte) error{
+
+	if conn.isClosed == true{
+		panic("链接已经关闭，不能向客户端发送数据！")
+	}
+
+	dp := NewDataPack()
+	message := NewMessage(msgId, data)
+
+	sendBody, err := dp.Pack(message)
+	if err != nil{
+
+		//panic("服务器向客户端发送数据，封包失败！ 失败原因：" + err.Error())
+		return err
+	}
+
+	if _, err := conn.Conn.Write(sendBody); err != nil{
+		//panic("服务器向客户端发送数据，发送失败！ 失败原因：" + err.Error())
+		return err
+	}
+	return nil
 }
 
 func (conn *Connection) Start() {

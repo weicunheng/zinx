@@ -28,7 +28,7 @@ type GlobalObj struct {
 var GlobalObject *GlobalObj
 
 func (g *GlobalObj) Reload() {
-	data, err := ioutil.ReadFile("conf/zinx.json")
+	data, err := ioutil.ReadFile("./config/zinx.json")
 	if err != nil{
 		panic("config/zinx.json读取失败！失败原因:" + err.Error())
 	}

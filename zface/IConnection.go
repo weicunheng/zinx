@@ -32,6 +32,7 @@ type IConnection interface {
 	GetTCPConnection() *net.TCPConn// 从当前链接获取原始的Socket TCP Connection
 	GetConnID() uint // 获取当前链接id
 	GetRemoteAddr() net.Addr // 获取远程链接地址信息  IP 、Port
+	SendMsg(msgId uint32, data []byte) error
 }
 
 /*
