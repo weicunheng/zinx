@@ -1,5 +1,7 @@
 package znet
-
+/*
+消息模块，Message 是 Request对象数据载体
+*/
 type Message struct {
 	MsgId  uint32
 	MsgLen uint32
