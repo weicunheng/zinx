@@ -17,8 +17,8 @@ type Connection struct {
 	isClosed bool
 	// 该链接处理方法api
 	//handleAPI zface.HandFunc
-
-	Router zface.IRouter
+	//Router zface.IRouter
+	Router zface.IMsgHandler
 
 	// 告知该链接已经退出、停止的channel
 	ExitBuffChan chan bool
@@ -93,11 +93,14 @@ func (conn *Connection) StartReader() {
 			msg,
 		}
 		// 根据路由调用方法
-		go func(req zface.IRequest) {
-			conn.Router.PreHandler(req)
-			conn.Router.Handler(req)
-			conn.Router.PostHandler(req)
-		}(&r)
+		//go func(req zface.IRequest) {
+		//	//conn.Router.PreHandler(req)
+		//	//conn.Router.Handler(req)
+		//	//conn.Router.PostHandler(req)
+		//
+		//}(&r)
+		// 处理router和handler
+		go conn.Router.DoMsgHandler(&r)
 
 	}
 }
@@ -150,7 +153,7 @@ func (conn *Connection) GetConnID() uint {
 func (conn *Connection) GetRemoteAddr() net.Addr {
 	return conn.Conn.RemoteAddr()
 }
-func NewConnection(conn *net.TCPConn, connId uint32, router zface.IRouter) *Connection {
+func NewConnection(conn *net.TCPConn, connId uint32, router zface.IMsgHandler) *Connection {
 	return &Connection{
 		conn,
 		connId,

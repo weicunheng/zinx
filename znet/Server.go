@@ -19,7 +19,8 @@ type Server struct {
 	ServerName string
 
 	// 路由功能
-	Router zface.IRouter
+	//Router zface.IRouter
+	Router zface.IMsgHandler
 }
 
 func CallBackClient(c *net.TCPConn, buf []byte, cnt int) error {
@@ -94,9 +95,10 @@ func (s *Server) Server() {
 	select {}
 }
 
-func (s *Server) AddRouter(r zface.IRouter) {
+func (s *Server) AddRouter(msgId uint32, router zface.IRouter) {
 	// 添加路由
-	s.Router = r
+	//s.Router = r
+	s.Router.AddRouter(msgId, router)
 }
 
 func NewServer(name string) zface.IServer {
@@ -109,7 +111,7 @@ func NewServer(name string) zface.IServer {
 		settings.Host,
 		settings.TcpPort,
 		name,
-		nil,
+		NewMsgHandler(),  // 初始化map
 	}
 	return s
 }
