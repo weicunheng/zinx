@@ -2,6 +2,7 @@ package znet
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"zinx/zface"
 )
@@ -29,23 +30,67 @@ func (c *Connection) StartReader() {
 	defer c.Stop()
 
 	for {
-		buf := make([]byte, 512)
-		_, err := c.Conn.Read(buf)
-		if err != nil {
-			// 读取失败
-			panic("读取失败， " + err.Error())
+		/*
+			buf := make([]byte, 512)
+				_, err := c.Conn.Read(buf)
+				if err != nil {
+					// 读取失败
+					panic("读取失败， " + err.Error())
+				}
+
+				// 并不是直接调用c.Conn.Write(), 而是调用模板回调方法
+				//if err := c.handleAPI(c.Conn, buf, cnt); err != nil {
+				//	panic("回写失败" + err.Error())
+				//}
+
+				// 当Connection读取完数据之后，我们将Connection链接对象和数据 封装成原子包Request
+				// Request作为Router的输入
+				r := Request{
+					c,
+					buf,
+				}
+				// 根据路由调用方法
+				go func(req zface.IRequest) {
+					c.Router.PreHandler(req)
+					c.Router.Handler(req)
+					c.Router.PostHandler(req)
+				}(&r)
+		*/
+		// 使用Message代替
+		// 1. 创建拆包对象
+		dp := NewDataPack()
+
+		// 2. 读取客户端msg head  8个字节二进制数据
+		headByteData := make([]byte, dp.GetHeadLen())
+		if _, err := io.ReadFull(c.GetTCPConnection(), headByteData); err != nil {
+			panic("读取链接中Message头信息 失败！失败原因:" + err.Error())
 		}
 
-		// 并不是直接调用c.Conn.Write(), 而是调用模板回调方法
-		//if err := c.handleAPI(c.Conn, buf, cnt); err != nil {
-		//	panic("回写失败" + err.Error())
-		//}
+		// 3. 拆包得到 msgId和 msgDataLen 放入msg中
+		msg, err := dp.UnPack(headByteData)
+		if err != nil {
+			panic("接卸链接中Message头信息 失败！失败原因:" + err.Error())
+		}
+		// 4. 根据dataLen再次读取Data， 放入msg.Data中
+
+		var messageBody []byte
+		if msg.GetMsgLen() > 0 {
+			messageBody = make([]byte, msg.GetMsgLen())
+			if _, err := io.ReadFull(c.GetTCPConnection(), messageBody); err != nil{
+				panic("读取链接中Message Body信息 失败！失败原因:" + err.Error())
+			}
+
+		}
+
+		msg.SetMsgData(messageBody)
+		// 5. 得到当前conn数据Request请求数据
+
 
 		// 当Connection读取完数据之后，我们将Connection链接对象和数据 封装成原子包Request
 		// Request作为Router的输入
 		r := Request{
 			c,
-			buf,
+			msg,
 		}
 		// 根据路由调用方法
 		go func(req zface.IRequest) {
@@ -53,7 +98,7 @@ func (c *Connection) StartReader() {
 			c.Router.Handler(req)
 			c.Router.PostHandler(req)
 		}(&r)
-
+		
 	}
 }
 
@@ -88,6 +133,5 @@ func NewConnection(conn *net.TCPConn, connId uint32, router zface.IRouter) *Conn
 		false,
 		router,
 		make(chan bool, 1),
-
 	}
 }

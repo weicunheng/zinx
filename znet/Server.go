@@ -48,6 +48,7 @@ func (s *Server) accept(listener *net.TCPListener) {
 		dealConn := NewConnection(connection, cid, s.Router)
 		cid++
 
+		// 启动链接服务程序
 		go dealConn.Start()
 		//go func() {
 		//	for {
